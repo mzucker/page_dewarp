@@ -4,8 +4,9 @@
 # "cubic sheet" model. Requires OpenCV (version 3 or greater),
 # PIL/Pillow, and scipy.optimize.
 ######################################################################
-# Author: Matt Zucker
-# Date:   July 2016
+# Author:  Matt Zucker
+# Date:    July 2016
+# License: MIT License (see LICENSE.txt)
 ######################################################################
 
 import cv2
