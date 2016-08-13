@@ -44,7 +44,7 @@ SPAN_MIN_WIDTH = 30      # minimum reduced px width for span
 SPAN_PX_PER_STEP = 20    # reduced px spacing for sampling along spans
 FOCAL_LENGTH = 1.2       # normalized focal length of camera
 
-DEBUG_LEVEL = 3          # 0=none, 1=some, 2=lots, 3=all
+DEBUG_LEVEL = 0          # 0=none, 1=some, 2=lots, 3=all
 DEBUG_OUTPUT = 'file'    # file, screen, both
 
 WINDOW_NAME = 'Dewarp'   # Window name for visualization
