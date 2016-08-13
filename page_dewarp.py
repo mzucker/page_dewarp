@@ -243,21 +243,10 @@ def project_xy(xy_coords, pvec):
 # project all of the 2D keypoints stored in the parameter vector to 3D
 # using the function above
 
-def project_keypoints(span_counts, pvec):
+def project_keypoints(pvec, keypoint_index):
 
-    nspans = len(span_counts)
-
-    ycoords = pvec[8:8+nspans]
-
-    npts = 1 + sum(span_counts)
-    xy_coords = np.zeros((npts, 2))
-    xy_coords[1:, 0] = pvec[8+nspans:]
-
-    start = 1
-    for ycoord, count in zip(ycoords, span_counts):
-        end = start + count
-        xy_coords[start:end, 1] = ycoord
-        start = end
+    xy_coords = pvec[keypoint_index]
+    xy_coords[0, :] = 0
 
     return project_xy(xy_coords, pvec)
 
@@ -660,7 +649,9 @@ def keypoints_from_samples(name, small, pagemask, page_outline,
     evec = all_evecs / all_weights
 
     x_dir = evec.flatten()
-    if x_dir[0] < 0: x_dir = -x_dir
+
+    if x_dir[0] < 0:
+        x_dir = -x_dir
 
     y_dir = np.array([-x_dir[1], x_dir[0]])
 
@@ -786,16 +777,36 @@ def imgsize(img):
 
 ######################################################################
 
+def make_keypoint_index(span_counts):
+
+    nspans = len(span_counts)
+    npts = sum(span_counts)
+    keypoint_index = np.zeros((npts+1, 2), dtype=int)
+    start = 1
+
+    for i, count in enumerate(span_counts):
+        end = start + count
+        keypoint_index[start:start+end, 1] = 8+i
+        start = end
+
+    keypoint_index[1:, 0] = np.arange(npts) + 8 + nspans
+
+    return keypoint_index
+
+######################################################################
+
 def optimize_params(name, small, dstpoints, span_counts, params):
 
-    points_for_params = lambda pvec: project_keypoints(span_counts, pvec)
+    keypoint_index = make_keypoint_index(span_counts)
+
+    points_for_params = lambda pvec: project_keypoints(pvec, keypoint_index)
     err = lambda ppts: np.sum((dstpoints - ppts)**2)
     objective = lambda pvec: err(points_for_params(pvec))
 
     print '  initial objective is', objective(params)
 
     if DEBUG_LEVEL >= 1:
-        projpts = project_keypoints(span_counts, params)
+        projpts = points_for_params(params)
         display = draw_correspondences(small, dstpoints, projpts)
         debug_show(name, 4, 'keypoints before', display)
 
@@ -810,7 +821,7 @@ def optimize_params(name, small, dstpoints, span_counts, params):
     params = res.x
 
     if DEBUG_LEVEL >= 1:
-        projpts = project_keypoints(span_counts, params)
+        projpts = points_for_params(params)
         display = draw_correspondences(small, dstpoints, projpts)
         debug_show(name, 5, 'keypoints after', display)
 
