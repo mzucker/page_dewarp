@@ -17,8 +17,8 @@ import Image
 import numpy as np
 import scipy.optimize
 
-PAGE_MARGIN_X = 5        # reduced px to ignore near L/R edge
-PAGE_MARGIN_Y = 15       # reduced px to ignore near T/B edge
+PAGE_MARGIN_X = 50       # reduced px to ignore near L/R edge
+PAGE_MARGIN_Y = 20       # reduced px to ignore near T/B edge
 
 OUTPUT_ZOOM = 1.0        # how much to zoom output relative to *original* image
 OUTPUT_DPI = 300         # just affects stated DPI of PNG, not appearance
@@ -775,7 +775,7 @@ def get_page_dims(corners, rough_dims, params):
     return dims
 
 
-def remap_image(name, img, page_dims, params):
+def remap_image(name, img, small, page_dims, params):
 
     height = 0.5 * page_dims[1] * OUTPUT_ZOOM * img.shape[0]
     height = round_nearest_multiple(height, REMAP_DECIMATE)
@@ -826,7 +826,10 @@ def remap_image(name, img, page_dims, params):
     pil_image.save(threshfile, dpi=(OUTPUT_DPI, OUTPUT_DPI))
 
     if DEBUG_LEVEL >= 1:
-        display = resize_to_screen(thresh)
+        height = small.shape[0]
+        width = int(round(height * float(thresh.shape[1])/thresh.shape[0]))
+        display = cv2.resize(thresh, (width, height),
+                             interpolation=cv2.INTER_AREA)
         debug_show(name, 6, 'output', display)
 
     return threshfile
@@ -894,7 +897,7 @@ def main():
 
         page_dims = get_page_dims(corners, rough_dims, params)
 
-        outfile = remap_image(name, img, page_dims, params)
+        outfile = remap_image(name, img, small, page_dims, params)
 
         outfiles.append(outfile)
 
