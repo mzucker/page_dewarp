@@ -24,8 +24,8 @@ for alpha, beta in slopes:
 
 plt.legend()
 plt.grid('on')
-plt.xlabel('Page x (m)')
-plt.ylabel('Page z (m)')
-plt.title('Cubic splines constrained to zero at endpoints')
+plt.xlabel('Horizontal page coordinate $x$')
+plt.ylabel('Vertical displacement $z$')
+plt.title('Cubic curves constrained to zero at endpoints')
 plt.savefig('cubic_splines.png')
 plt.show()
