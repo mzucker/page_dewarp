@@ -17,6 +17,9 @@ import Image
 import numpy as np
 import scipy.optimize
 
+# for some reason pylint complains about cv2 members being undefined :(
+# pylint: disable=E1101
+
 PAGE_MARGIN_X = 50       # reduced px to ignore near L/R edge
 PAGE_MARGIN_Y = 20       # reduced px to ignore near T/B edge
 
