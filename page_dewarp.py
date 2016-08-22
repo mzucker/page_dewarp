@@ -13,7 +13,7 @@ import os
 import sys
 import datetime
 import cv2
-import Image
+from PIL import Image
 import numpy as np
 import scipy.optimize
 
