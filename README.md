@@ -11,4 +11,4 @@ Requirements:
  
 Usage:
 
-    page_dewarp.py IMAGE1 [IMAGE2 ...]
+    python page_dewarp.py IMAGE1 [IMAGE2 ...]
