@@ -9,6 +9,13 @@
 # License: MIT License (see LICENSE.txt)
 ######################################################################
 
+from __future__ import division
+from __future__ import print_function
+from builtins import zip
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 import os
 import sys
 import datetime
@@ -348,13 +355,13 @@ def blob_mean_and_tangent(contour):
 
     area = moments['m00']
 
-    mean_x = moments['m10'] / area
-    mean_y = moments['m01'] / area
+    mean_x = old_div(moments['m10'], area)
+    mean_y = old_div(moments['m01'], area)
 
-    moments_matrix = np.array([
+    moments_matrix = old_div(np.array([
         [moments['mu20'], moments['mu11']],
         [moments['mu11'], moments['mu02']]
-    ]) / area
+    ]), area)
 
     _, svd_u, _ = cv2.SVDecomp(moments_matrix)
 
@@ -414,8 +421,8 @@ def generate_candidate_edge(cinfo_a, cinfo_b):
     overall_tangent = cinfo_b.center - cinfo_a.center
     overall_angle = np.arctan2(overall_tangent[1], overall_tangent[0])
 
-    delta_angle = max(angle_dist(cinfo_a.angle, overall_angle),
-                      angle_dist(cinfo_b.angle, overall_angle)) * 180/np.pi
+    delta_angle = old_div(max(angle_dist(cinfo_a.angle, overall_angle),
+                      angle_dist(cinfo_b.angle, overall_angle)) * 180,np.pi)
 
     # we want the largest overlap in x to be small
     x_overlap = max(x_overlap_a, x_overlap_b)
@@ -549,12 +556,12 @@ def sample_spans(shape, spans):
 
             yvals = np.arange(cinfo.mask.shape[0]).reshape((-1, 1))
             totals = (yvals * cinfo.mask).sum(axis=0)
-            means = totals / cinfo.mask.sum(axis=0)
+            means = old_div(totals, cinfo.mask.sum(axis=0))
 
             xmin, ymin = cinfo.rect[:2]
 
             step = SPAN_PX_PER_STEP
-            start = ((len(means)-1) % step) / 2
+            start = old_div(((len(means)-1) % step), 2)
 
             contour_points += [(x+xmin, means[x]+ymin)
                                for x in range(start, len(means), step)]
@@ -585,7 +592,7 @@ def keypoints_from_samples(name, small, pagemask, page_outline,
         all_evecs += evec * weight
         all_weights += weight
 
-    evec = all_evecs / all_weights
+    evec = old_div(all_evecs, all_weights)
 
     x_dir = evec.flatten()
 
@@ -642,11 +649,11 @@ def visualize_contours(name, small, cinfo_list):
     mask = (regions.max(axis=2) != 0)
 
     display = small.copy()
-    display[mask] = (display[mask]/2) + (regions[mask]/2)
+    display[mask] = (old_div(display[mask],2)) + (old_div(regions[mask],2))
 
     for j, cinfo in enumerate(cinfo_list):
         color = CCOLORS[j % len(CCOLORS)]
-        color = tuple([c/4 for c in color])
+        color = tuple([old_div(c,4) for c in color])
 
         cv2.circle(display, fltp(cinfo.center), 3,
                    (255, 255, 255), 1, cv2.LINE_AA)
@@ -669,7 +676,7 @@ def visualize_spans(name, small, pagemask, spans):
     mask = (regions.max(axis=2) != 0)
 
     display = small.copy()
-    display[mask] = (display[mask]/2) + (regions[mask]/2)
+    display[mask] = (old_div(display[mask],2)) + (old_div(regions[mask],2))
     display[pagemask == 0] /= 4
 
     debug_show(name, 2, 'spans', display)
@@ -736,20 +743,20 @@ def optimize_params(name, small, dstpoints, span_counts, params):
         ppts = project_keypoints(pvec, keypoint_index)
         return np.sum((dstpoints - ppts)**2)
 
-    print '  initial objective is', objective(params)
+    print('  initial objective is', objective(params))
 
     if DEBUG_LEVEL >= 1:
         projpts = project_keypoints(params, keypoint_index)
         display = draw_correspondences(small, dstpoints, projpts)
         debug_show(name, 4, 'keypoints before', display)
 
-    print '  optimizing', len(params), 'parameters...'
+    print('  optimizing', len(params), 'parameters...')
     start = datetime.datetime.now()
     res = scipy.optimize.minimize(objective, params,
                                   method='Powell')
     end = datetime.datetime.now()
-    print '  optimization took', round((end-start).total_seconds(), 2), 'sec.'
-    print '  final objective is', res.fun
+    print('  optimization took', round((end-start).total_seconds(), 2), 'sec.')
+    print('  final objective is', res.fun)
     params = res.x
 
     if DEBUG_LEVEL >= 1:
@@ -773,7 +780,7 @@ def get_page_dims(corners, rough_dims, params):
     res = scipy.optimize.minimize(objective, dims, method='Powell')
     dims = res.x
 
-    print '  got page dims', dims[0], 'x', dims[1]
+    print('  got page dims', dims[0], 'x', dims[1])
 
     return dims
 
@@ -783,13 +790,13 @@ def remap_image(name, img, small, page_dims, params):
     height = 0.5 * page_dims[1] * OUTPUT_ZOOM * img.shape[0]
     height = round_nearest_multiple(height, REMAP_DECIMATE)
 
-    width = round_nearest_multiple(height * page_dims[0] / page_dims[1],
+    width = round_nearest_multiple(old_div(height * page_dims[0], page_dims[1]),
                                    REMAP_DECIMATE)
 
-    print '  output will be {}x{}'.format(width, height)
+    print('  output will be {}x{}'.format(width, height))
 
-    height_small = height / REMAP_DECIMATE
-    width_small = width / REMAP_DECIMATE
+    height_small = old_div(height, REMAP_DECIMATE)
+    width_small = old_div(width, REMAP_DECIMATE)
 
     page_x_range = np.linspace(0, page_dims[0], width_small)
     page_y_range = np.linspace(0, page_dims[1], height_small)
@@ -841,7 +848,7 @@ def remap_image(name, img, small, page_dims, params):
 def main():
 
     if len(sys.argv) < 2:
-        print 'usage:', sys.argv[0], 'IMAGE1 [IMAGE2 ...]'
+        print('usage:', sys.argv[0], 'IMAGE1 [IMAGE2 ...]')
         sys.exit(0)
 
     if DEBUG_LEVEL > 0 and DEBUG_OUTPUT != 'file':
@@ -856,8 +863,8 @@ def main():
         basename = os.path.basename(imgfile)
         name, _ = os.path.splitext(basename)
 
-        print 'loaded', basename, 'with size', imgsize(img),
-        print 'and resized to', imgsize(small)
+        print('loaded', basename, 'with size', imgsize(img), end=' ')
+        print('and resized to', imgsize(small))
 
         if DEBUG_LEVEL >= 3:
             debug_show(name, 0.0, 'original', small)
@@ -868,20 +875,20 @@ def main():
         spans = assemble_spans(name, small, pagemask, cinfo_list)
 
         if len(spans) < 3:
-            print '  detecting lines because only', len(spans), 'text spans'
+            print('  detecting lines because only', len(spans), 'text spans')
             cinfo_list = get_contours(name, small, pagemask, 'line')
             spans2 = assemble_spans(name, small, pagemask, cinfo_list)
             if len(spans2) > len(spans):
                 spans = spans2
 
         if len(spans) < 1:
-            print 'skipping', name, 'because only', len(spans), 'spans'
+            print('skipping', name, 'because only', len(spans), 'spans')
             continue
 
         span_points = sample_spans(small.shape, spans)
 
-        print '  got', len(spans), 'spans',
-        print 'with', sum([len(pts) for pts in span_points]), 'points.'
+        print('  got', len(spans), 'spans', end=' ')
+        print('with', sum([len(pts) for pts in span_points]), 'points.')
 
         corners, ycoords, xcoords = keypoints_from_samples(name, small,
                                                            pagemask,
@@ -904,11 +911,11 @@ def main():
 
         outfiles.append(outfile)
 
-        print '  wrote', outfile
-        print
+        print('  wrote', outfile)
+        print()
 
-    print 'to convert to PDF (requires ImageMagick):'
-    print '  convert -compress Group4 ' + ' '.join(outfiles) + ' output.pdf'
+    print('to convert to PDF (requires ImageMagick):')
+    print('  convert -compress Group4 ' + ' '.join(outfiles) + ' output.pdf')
 
 
 if __name__ == '__main__':
