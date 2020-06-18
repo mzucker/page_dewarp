@@ -677,7 +677,7 @@ def visualize_spans(name, small, pagemask, spans):
 
     display = small.copy()
     display[mask] = (old_div(display[mask],2)) + (old_div(regions[mask],2))
-    display[pagemask == 0] /= 4
+    display[pagemask == 0] //= 4
 
     debug_show(name, 2, 'spans', display)
 
