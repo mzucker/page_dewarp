@@ -2,3 +2,4 @@ numpy
 scipy
 Pillow
 opencv-python
+future
