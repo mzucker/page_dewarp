@@ -829,7 +829,7 @@ def remap_image(name, img, small, page_dims, params):
                          None, cv2.BORDER_REPLICATE)
 
     thresh = cv2.adaptiveThreshold(remapped, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                   cv2.THRESH_BINARY, ADAPTIVE_WINSZ, 25)
+                                   cv2.THRESH_BINARY, ADAPTIVE_WINSZ, 17)
 
     pil_image = Image.fromarray(thresh)
     pil_image = pil_image.convert('1')
