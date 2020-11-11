@@ -348,6 +348,7 @@ def blob_mean_and_tangent(contour):
 
     area = moments['m00']
 
+    if area != 0:
     mean_x = moments['m10'] / area
     mean_y = moments['m01'] / area
 
@@ -355,6 +356,12 @@ def blob_mean_and_tangent(contour):
         [moments['mu20'], moments['mu11']],
         [moments['mu11'], moments['mu02']]
     ]) / area
+    else:
+        mean_x = mean_y = 0
+        moments_matrix = np.array([
+            [0.0, 0.0],
+            [0.0, 0.0]
+        ])
 
     _, svd_u, _ = cv2.SVDecomp(moments_matrix)
 
