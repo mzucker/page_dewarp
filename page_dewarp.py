@@ -755,7 +755,7 @@ def optimize_params(name, small, dstpoints, span_counts, params):
     print ('  optimizing', len(params), 'parameters...')
     start = datetime.datetime.now()
     res = scipy.optimize.minimize(objective, params,
-                                  method='Powell')
+                                  method='SLSQP')
     end = datetime.datetime.now()
     print ('  optimization took', round((end-start).total_seconds(), 2), 'sec.')
     print ('  final objective is', res.fun)
