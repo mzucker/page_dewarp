@@ -917,6 +917,47 @@ def main():
     print ('to convert to PDF (requires ImageMagick):')
     print ('  convert -compress Group4 ' + ' '.join(outfiles) + ' output.pdf')
 
+def dewarp(name, img):
 
+    small = resize_to_screen(img)
+
+    pagemask, page_outline = get_page_extents(small)
+
+    cinfo_list = get_contours(name, small, pagemask, 'text')
+    spans = assemble_spans(name, small, pagemask, cinfo_list)
+
+    if len(spans) < 3:
+        print ('  detecting lines because only', len(spans), 'text spans')
+        cinfo_list = get_contours(name, small, pagemask, 'line')
+        spans2 = assemble_spans(name, small, pagemask, cinfo_list)
+        if len(spans2) > len(spans):
+            spans = spans2
+
+    if len(spans) < 1:
+        print ('skipping', name, 'because only', len(spans), 'spans')
+        return None
+
+    span_points = sample_spans(small.shape, spans)
+
+    corners, ycoords, xcoords = keypoints_from_samples(name, small,
+                                                        pagemask,
+                                                        page_outline,
+                                                        span_points)
+
+    rough_dims, span_counts, params = get_default_params(corners,
+                                                            ycoords, xcoords)
+
+    dstpoints = np.vstack((corners[0].reshape((1, 1, 2)),) +
+                            tuple(span_points))
+
+    params = optimize_params(name, small,
+                                dstpoints,
+                                span_counts, params)
+    
+    page_dims = get_page_dims(corners, rough_dims, params)
+
+    outfile = remap_image(name, img, small, page_dims, params)
+
+    return outfile
 if __name__ == '__main__':
     main()
