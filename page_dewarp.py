@@ -348,6 +348,7 @@ def blob_mean_and_tangent(contour):
 
     area = moments['m00']
 
+    if area != 0:
     mean_x = moments['m10'] / area
     mean_y = moments['m01'] / area
 
@@ -355,6 +356,12 @@ def blob_mean_and_tangent(contour):
         [moments['mu20'], moments['mu11']],
         [moments['mu11'], moments['mu02']]
     ]) / area
+    else:
+        mean_x = mean_y = 0
+        moments_matrix = np.array([
+            [0.0, 0.0],
+            [0.0, 0.0]
+        ])
 
     _, svd_u, _ = cv2.SVDecomp(moments_matrix)
 
@@ -672,7 +679,7 @@ def visualize_spans(name, small, pagemask, spans):
 
     display = small.copy()
     display[mask] = (display[mask]/2) + (regions[mask]/2)
-    display[pagemask == 0] /= 4
+    display[pagemask == 0] //= 4
 
     debug_show(name, 2, 'spans', display)
 
@@ -748,7 +755,7 @@ def optimize_params(name, small, dstpoints, span_counts, params):
     print ('  optimizing', len(params), 'parameters...')
     start = datetime.datetime.now()
     res = scipy.optimize.minimize(objective, params,
-                                  method='Powell')
+                                  method='SLSQP')
     end = datetime.datetime.now()
     print ('  optimization took', round((end-start).total_seconds(), 2), 'sec.')
     print ('  final objective is', res.fun)
@@ -822,7 +829,7 @@ def remap_image(name, img, small, page_dims, params):
                          None, cv2.BORDER_REPLICATE)
 
     thresh = cv2.adaptiveThreshold(remapped, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                   cv2.THRESH_BINARY, ADAPTIVE_WINSZ, 25)
+                                   cv2.THRESH_BINARY, ADAPTIVE_WINSZ, 17)
 
     pil_image = Image.fromarray(thresh)
     pil_image = pil_image.convert('1')
@@ -910,6 +917,91 @@ def main():
     print ('to convert to PDF (requires ImageMagick):')
     print ('  convert -compress Group4 ' + ' '.join(outfiles) + ' output.pdf')
 
+def dewarp(name, img):
+
+    small = resize_to_screen(img)
+
+    pagemask, page_outline = get_page_extents(small)
+
+    cinfo_list = get_contours(name, small, pagemask, 'text')
+    spans = assemble_spans(name, small, pagemask, cinfo_list)
+
+    if len(spans) < 3:
+        print ('  detecting lines because only', len(spans), 'text spans')
+        cinfo_list = get_contours(name, small, pagemask, 'line')
+        spans2 = assemble_spans(name, small, pagemask, cinfo_list)
+        if len(spans2) > len(spans):
+            spans = spans2
+
+    if len(spans) < 1:
+        print ('skipping', name, 'because only', len(spans), 'spans')
+        return None
+
+    span_points = sample_spans(small.shape, spans)
+
+    corners, ycoords, xcoords = keypoints_from_samples(name, small,
+                                                        pagemask,
+                                                        page_outline,
+                                                        span_points)
+
+    rough_dims, span_counts, params = get_default_params(corners,
+                                                            ycoords, xcoords)
+
+    dstpoints = np.vstack((corners[0].reshape((1, 1, 2)),) +
+                            tuple(span_points))
+
+    params = optimize_params(name, small,
+                                dstpoints,
+                                span_counts, params)
+    
+    page_dims = get_page_dims(corners, rough_dims, params)
+
+    outfile = remap_image(name, img, small, page_dims, params)
+
+    return outfile
+
+def is_curve(name, img):
+    
+    small = resize_to_screen(img)
+
+    pagemask, page_outline = get_page_extents(small)
+
+    cinfo_list = get_contours(name, small, pagemask, 'text')
+    spans = assemble_spans(name, small, pagemask, cinfo_list)
+
+    if len(spans) < 3:
+        print ('  detecting lines because only', len(spans), 'text spans')
+        cinfo_list = get_contours(name, small, pagemask, 'line')
+        spans2 = assemble_spans(name, small, pagemask, cinfo_list)
+        if len(spans2) > len(spans):
+            spans = spans2
+
+    if len(spans) < 1:
+        print ('skipping', name, 'because only', len(spans), 'spans')
+        return None
+
+    span_points = sample_spans(small.shape, spans)
+
+    corners, ycoords, xcoords = keypoints_from_samples(name, small,
+                                                        pagemask,
+                                                        page_outline,
+                                                        span_points)
+
+    rough_dims, span_counts, params = get_default_params(corners,
+                                                            ycoords, xcoords)
+
+    dstpoints = np.vstack((corners[0].reshape((1, 1, 2)),) +
+                            tuple(span_points))
+
+    params = optimize_params(name, small,
+                                dstpoints,
+                                span_counts, params)
+    
+    if abs(params[0]) < 0.1 and abs(params[1]) < 0.1 and abs(params[2]) < 0.1:
+        return True
+    else:
+        print(params[:8])
+        return False
 
 if __name__ == '__main__':
     main()
