@@ -349,13 +349,13 @@ def blob_mean_and_tangent(contour):
     area = moments['m00']
 
     if area != 0:
-    mean_x = moments['m10'] / area
-    mean_y = moments['m01'] / area
+        mean_x = moments['m10'] / area
+        mean_y = moments['m01'] / area
 
-    moments_matrix = np.array([
-        [moments['mu20'], moments['mu11']],
-        [moments['mu11'], moments['mu02']]
-    ]) / area
+        moments_matrix = np.array([
+            [moments['mu20'], moments['mu11']],
+            [moments['mu11'], moments['mu02']]
+        ]) / area
     else:
         mean_x = mean_y = 0
         moments_matrix = np.array([
@@ -452,11 +452,11 @@ def make_tight_mask(contour, xmin, ymin, width, height):
 def get_contours(name, small, pagemask, masktype):
 
     mask = get_mask(name, small, pagemask, masktype)
-    #error #https://github.com/facebookresearch/maskrcnn-benchmark/issues/339
-    # _, contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
-    #                                   cv2.CHAIN_APPROX_NONE)
+    # In some environments/versions, cv2.findContours apparently returns a 2-tuple instead of 3-tuple
+    # https://github.com/facebookresearch/maskrcnn-benchmark/issues/339
+    # We are always interested in the second-to-last member (first or second member) of the tuple
 
-    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)
+    contours = cv2.findContours(mask, cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_NONE)[-2]
 
     contours_out = []
 
