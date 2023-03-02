@@ -33,7 +33,7 @@ num_alpha = 0.3
 num_beta = 0.03
 
 for key in [a, b, c, d]:
-    print key, '=', S[key]
+    print(key, '=', S[key])
     coeffs.append(S[key].subs(dict(alpha=num_alpha,
                                    beta=num_beta)))
 

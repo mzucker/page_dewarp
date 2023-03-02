@@ -449,22 +449,22 @@ def get_contours(name, small, pagemask, masktype):
     mask = get_mask(name, small, pagemask, masktype)
 
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL,
-                                      cv2.CHAIN_APPROX_NONE)
-
+                                   cv2.CHAIN_APPROX_NONE)
+    
     contours_out = []
-
+    
     for contour in contours:
-
+    
         rect = cv2.boundingRect(contour)
         xmin, ymin, width, height = rect
-
+        
         if (width < TEXT_MIN_WIDTH or
                 height < TEXT_MIN_HEIGHT or
                 width < TEXT_MIN_ASPECT*height):
             continue
-
+        
         tight_mask = make_tight_mask(contour, xmin, ymin, width, height)
-
+        
         if tight_mask.sum(axis=0).max() > TEXT_MAX_THICKNESS:
             continue
         
@@ -557,12 +557,12 @@ def sample_spans(shape, spans):
             yvals = np.arange(cinfo.mask.shape[0]).reshape((-1, 1))
             totals = (yvals * cinfo.mask).sum(axis=0)
             means = totals / cinfo.mask.sum(axis=0)
-
+            
             xmin, ymin = cinfo.rect[:2]
-
+            
             step = SPAN_PX_PER_STEP
             start = ((len(means)-1) % step) // 2
-
+            
             contour_points += [(x+xmin, means[x]+ymin)
                                for x in range(start, len(means), step)]
 
@@ -792,12 +792,12 @@ def remap_image(name, img, small, page_dims, params):
 
     width = round_nearest_multiple(height * page_dims[0] / page_dims[1],
                                    REMAP_DECIMATE)
-
+    
     print('  output will be {}x{}'.format(width, height))
-
+    
     height_small = height // REMAP_DECIMATE
     width_small = width // REMAP_DECIMATE
-
+    
     page_x_range = np.linspace(0, page_dims[0], width_small)
     page_y_range = np.linspace(0, page_dims[1], height_small)
 
